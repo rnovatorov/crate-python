@@ -32,6 +32,8 @@ from copy import deepcopy
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Union
 
+from .exceptions import ColumnTypeCodeError
+
 ConverterFunction = Callable[[Optional[Any]], Optional[Any]]
 ColTypesDefinition = Union[int, List[Union[int, "ColTypesDefinition"]]]
 
@@ -247,7 +249,3 @@ class ColumnTypeCode:
             return cls(data_type=DataType.ARRAY, subtype=subtype)
 
         raise ColumnTypeCodeError(value)
-
-
-class ColumnTypeCodeError(Exception):
-    pass

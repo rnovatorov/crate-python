@@ -24,8 +24,8 @@ import warnings
 from datetime import datetime, timedelta, timezone
 from itertools import count
 
-from .converter import ColumnTypeCode, ColumnTypeCodeError, Converter, DataType
-from .exceptions import ProgrammingError
+from .converter import ColumnTypeCode, Converter, DataType
+from .exceptions import ColumnTypeCodeError, ProgrammingError
 
 _NAMED_PARAM_RE = re.compile(r"%\(([^)]+)\)s")
 

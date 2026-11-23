@@ -31,13 +31,12 @@ import pytz
 from crate.client import connect
 from crate.client.converter import (
     ColumnTypeCode,
-    ColumnTypeCodeError,
     DataType,
     DefaultTypeConverter,
     _to_bit_string,
     _to_uuid,
 )
-from crate.client.exceptions import ProgrammingError
+from crate.client.exceptions import ColumnTypeCodeError, ProgrammingError
 
 
 def test_cursor_fetch(mocked_connection):

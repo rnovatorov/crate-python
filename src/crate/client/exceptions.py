@@ -99,3 +99,7 @@ class BlobLocationNotFoundException(BlobException):
 
 class TimezoneUnawareException(Error):
     pass
+
+
+class ColumnTypeCodeError(Exception):
+    pass
