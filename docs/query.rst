@@ -235,8 +235,8 @@ column names for keys. If you want to access column names, you must use
 ``cursor.description``.
 
 The `Python Database API Specification v2.0`_ `defines`_ seven description
-attributes per column, but only the first one (column name) is supported by
-this library. All other attributes are ``None``.
+attributes per column. The column name and the type code are supported by
+this library, all other attributes are ``None``.
 
 Let's say you have a query like this:
 
@@ -252,18 +252,30 @@ Let's say you have a query like this:
 The cursor ``description`` might look like this:
 
     >>> cursor.description
-    (('date', None, None, None, None, None, None),
-     ('datetime_tz', None, None, None, None, None, None),
-     ('datetime_notz', None, None, None, None, None, None),
-     ('description', None, None, None, None, None, None),
+    (('date', ColumnTypeCode(DataType.TIMESTAMP_WITHOUT_TZ), None, None, None, None, None),
+     ('datetime_tz', ColumnTypeCode(DataType.TIMESTAMP_WITH_TZ), ...),
+     ('datetime_notz', ColumnTypeCode(DataType.TIMESTAMP_WITHOUT_TZ), ...),
+     ('description', ColumnTypeCode(DataType.TEXT), ...),
     ...
-     ('nullable_datetime', None, None, None, None, None, None),
-     ('position', None, None, None, None, None, None))
+     ('nullable_datetime', ColumnTypeCode(DataType.TIMESTAMP_WITHOUT_TZ), ...),
+     ('position', ColumnTypeCode(DataType.INTEGER), ...))
 
 You can turn this into something more manageable with :ref:`py:tut-listcomps`:
 
     >>> [column[0] for column in cursor.description]
     ['date', 'datetime_tz', 'datetime_notz', ..., 'nullable_datetime', 'position']
+
+Accessing column types
+======================
+
+The type code can be used to find columns of a certain data type, for example
+to process ``TIMESTAMP`` columns differently than numeric ones:
+
+    >>> from crate.client.converter import DataType
+    >>> for name, type_code, *_ in cursor.description:
+    ...     if type_code.data_type is DataType.TIMESTAMP_WITH_TZ:
+    ...         print(name)
+    datetime_tz
 
 
 Data type conversion
