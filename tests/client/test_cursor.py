@@ -80,9 +80,108 @@ def test_cursor_description(mocked_connection):
         ):
             assert expected_name == name[0]
 
+        type_codes = [column[1] for column in cursor.description]
+        assert [tc.data_type for tc in type_codes] == [
+            DataType.TEXT,
+            DataType.IP,
+        ]
+        assert all(tc.subtype is None for tc in type_codes)
+
         cursor.close()
 
         assert cursor.description is None
+
+
+def test_cursor_description_with_array_type(mocked_connection):
+    """Verify ARRAY columns resolve to a recursive ColumnTypeCode."""
+    cursor = mocked_connection.cursor()
+    response = {
+        "col_types": [4, [100, 5]],
+        "cols": ["name", "addresses"],
+        "rows": [["foo", ["10.10.10.1"]]],
+        "rowcount": 1,
+        "duration": 123,
+    }
+    with mock.patch.object(
+        mocked_connection.client, "sql", return_value=response
+    ):
+        cursor.execute("")
+        type_codes = [column[1] for column in cursor.description]
+        assert type_codes[0].data_type is DataType.TEXT
+        assert type_codes[1].data_type is DataType.ARRAY
+        assert type_codes[1].subtype.data_type is DataType.IP
+        assert type_codes[1].subtype.subtype is None
+
+
+def test_cursor_description_without_col_types(mocked_connection):
+    """Verify type codes degrade to None when col_types is absent."""
+    cursor = mocked_connection.cursor()
+    response = {
+        "cols": ["name", "address"],
+        "rows": [["foo", "10.10.10.1"]],
+        "rowcount": 1,
+        "duration": 123,
+    }
+    with mock.patch.object(
+        mocked_connection.client, "sql", return_value=response
+    ):
+        cursor.execute("")
+        assert [column[1] for column in cursor.description] == [None, None]
+
+
+def test_cursor_description_with_null_col_types(mocked_connection):
+    """Verify a null col_types value degrades to None, not a TypeError."""
+    cursor = mocked_connection.cursor()
+    response = {
+        "col_types": None,
+        "cols": ["name", "address"],
+        "rows": [["foo", "10.10.10.1"]],
+        "rowcount": 1,
+        "duration": 123,
+    }
+    with mock.patch.object(
+        mocked_connection.client, "sql", return_value=response
+    ):
+        cursor.execute("")
+        assert [column[1] for column in cursor.description] == [None, None]
+
+
+def test_cursor_description_with_short_col_types(mocked_connection):
+    """Verify missing trailing entries degrade per-column to None."""
+    cursor = mocked_connection.cursor()
+    response = {
+        "col_types": [4],
+        "cols": ["name", "address"],
+        "rows": [["foo", "10.10.10.1"]],
+        "rowcount": 1,
+        "duration": 123,
+    }
+    with mock.patch.object(
+        mocked_connection.client, "sql", return_value=response
+    ):
+        cursor.execute("")
+        type_codes = [column[1] for column in cursor.description]
+        assert type_codes[0].data_type is DataType.TEXT
+        assert type_codes[1] is None
+
+
+def test_cursor_description_with_unknown_type(mocked_connection):
+    """Verify unknown type identifiers degrade to None instead of raising."""
+    cursor = mocked_connection.cursor()
+    response = {
+        "col_types": [999, 4],
+        "cols": ["foo", "name"],
+        "rows": [["n/a", "foo"]],
+        "rowcount": 1,
+        "duration": 123,
+    }
+    with mock.patch.object(
+        mocked_connection.client, "sql", return_value=response
+    ):
+        cursor.execute("")
+        type_codes = [column[1] for column in cursor.description]
+        assert type_codes[0] is None
+        assert type_codes[1].data_type is DataType.TEXT
 
 
 def test_cursor_rowcount(mocked_connection):

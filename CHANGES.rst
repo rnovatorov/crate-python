@@ -4,6 +4,11 @@ Changes for crate
 
 Unreleased
 ================
+- ``Cursor.description`` now reports the column type code as a
+  ``ColumnTypeCode`` object, resolved from the server's ``col_types``
+  response, instead of ``None``. Array columns carry their element type
+  as ``subtype``. The type code is ``None`` if the type information is
+  missing or unknown to this client version.
 - Breaking change: ``CrateLayer.start()`` now raises ``SystemError`` when CrateDB does
   not report its HTTP address. The startup timeout is raised from 30s to 90s.
 - Breaking change: ``CrateLayer`` can be used as a context manager, which starts and

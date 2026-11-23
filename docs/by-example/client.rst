@@ -238,8 +238,8 @@ Cursor Description
 ==================
 
 The ``description`` property of the cursor returns a sequence of 7-item
-sequences containing the column name as first parameter. Just the name field is
-supported, all other fields are 'None':
+sequences containing the column name as first parameter, and the column type
+as a ``ColumnTypeCode`` as second. All other fields are ``None``:
 
     >>> cursor.execute("SELECT * FROM locations order by name")
     >>> result = cursor.fetchone()
@@ -260,17 +260,31 @@ supported, all other fields are 'None':
 
     >>> result = cursor.description
     >>> pprint(result)
-    (('name', None, None, None, None, None, None),
-     ('date', None, None, None, None, None, None),
-     ('datetime_tz', None, None, None, None, None, None),
-     ('datetime_notz', None, None, None, None, None, None),
-     ('nullable_datetime', None, None, None, None, None, None),
-     ('nullable_date', None, None, None, None, None, None),
-     ('kind', None, None, None, None, None, None),
-     ('flag', None, None, None, None, None, None),
-     ('position', None, None, None, None, None, None),
-     ('description', None, None, None, None, None, None),
-     ('details', None, None, None, None, None, None))
+    (('name', ColumnTypeCode(DataType.TEXT), None, None, None, None, None),
+     ('date', ColumnTypeCode(DataType.TIMESTAMP_WITHOUT_TZ), ...),
+     ('datetime_tz', ColumnTypeCode(DataType.TIMESTAMP_WITH_TZ), ...),
+     ('datetime_notz', ColumnTypeCode(DataType.TIMESTAMP_WITHOUT_TZ), ...),
+     ('nullable_datetime', ColumnTypeCode(DataType.TIMESTAMP_WITHOUT_TZ), ...),
+     ('nullable_date', ColumnTypeCode(DataType.TIMESTAMP_WITHOUT_TZ), ...),
+     ('kind', ColumnTypeCode(DataType.TEXT), ...),
+     ('flag', ColumnTypeCode(DataType.BOOLEAN), ...),
+     ('position', ColumnTypeCode(DataType.INTEGER), ...),
+     ('description', ColumnTypeCode(DataType.TEXT), ...),
+     ('details', ColumnTypeCode(DataType.ARRAY, ColumnTypeCode(DataType.OBJECT)), ...))
+
+Recursive types
+---------------
+
+``ARRAY`` columns report their element type as the ``subtype`` of their
+``ColumnTypeCode``, recursively for nested arrays:
+
+    >>> cursor.execute("select [[1, 2], [3]]")
+    >>> cursor.description
+    (('[[1, 2], [3]]',
+      ColumnTypeCode(DataType.ARRAY,
+                     ColumnTypeCode(DataType.ARRAY,
+                                    ColumnTypeCode(DataType.INTEGER))),
+      None, None, None, None, None),)
 
 Closing the Cursor
 ==================

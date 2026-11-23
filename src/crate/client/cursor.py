@@ -24,7 +24,7 @@ import warnings
 from datetime import datetime, timedelta, timezone
 from itertools import count
 
-from .converter import Converter, DataType
+from .converter import ColumnTypeCode, ColumnTypeCodeError, Converter, DataType
 from .exceptions import ProgrammingError
 
 _NAMED_PARAM_RE = re.compile(r"%\(([^)]+)\)s")
@@ -311,8 +311,26 @@ class Cursor:
             return None
 
         description = []
-        for col in self._result["cols"]:
-            description.append((col, None, None, None, None, None, None))
+
+        cols = self._result["cols"]
+        col_types = self._result.get("col_types") or []
+
+        for i, name in enumerate(cols):
+            col_type = None
+            try:
+                col_type = col_types[i]
+            except IndexError:
+                pass
+
+            type_code = None
+            if col_type is not None:
+                try:
+                    type_code = ColumnTypeCode.from_json(col_type)
+                except ColumnTypeCodeError:
+                    pass
+
+            description.append((name, type_code, None, None, None, None, None))
+
         return tuple(description)
 
     @property

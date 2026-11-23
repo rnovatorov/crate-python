@@ -37,6 +37,7 @@ request without needing to execute an SQL statement.
     >>> connection.client.set_next_response({
     ...     "rows":[ [ "North West Ripple", 1 ], [ "Arkintoofle Minor", 3 ], [ "Alpha Centauri", 3 ] ],
     ...     "cols":[ "name", "position" ],
+    ...     "col_types":[ 4, 9 ],
     ...     "rowcount":3,
     ...     "duration":123
     ... })
@@ -172,7 +173,8 @@ description
 ===========
 
     >>> cursor.description
-    (('name', None, None, None, None, None, None), ('position', None, None, None, None, None, None))
+    (('name', ColumnTypeCode(DataType.TEXT), None, None, None, None, None),
+     ('position', ColumnTypeCode(DataType.INTEGER), None, None, None, None, None))
 
 rowcount
 ========
