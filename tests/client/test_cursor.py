@@ -30,6 +30,8 @@ import pytz
 
 from crate.client import connect
 from crate.client.converter import (
+    ColumnTypeCode,
+    ColumnTypeCodeError,
     DataType,
     DefaultTypeConverter,
     _to_bit_string,
@@ -652,6 +654,56 @@ def test_pass_through_data_types_registered_in_enum():
     assert DataType(28) is DataType.FLOAT_VECTOR
     assert DataType(29) is DataType.UUID
     assert DataType(30) is DataType.REGTYPE
+
+
+def test_column_type_code_from_json_nested_array():
+    """Verify nested array values resolve recursively."""
+    type_code = ColumnTypeCode.from_json([100, [100, 4]])
+    assert type_code.data_type is DataType.ARRAY
+    assert type_code.subtype is not None
+    assert type_code.subtype.data_type is DataType.ARRAY
+    assert type_code.subtype.subtype is not None
+    assert type_code.subtype.subtype.data_type is DataType.TEXT
+    assert type_code.subtype.subtype.subtype is None
+
+
+def test_column_type_code_invariants():
+    """Verify the constructor enforces the subtype presence rules."""
+    with pytest.raises(ColumnTypeCodeError):
+        ColumnTypeCode(DataType.ARRAY)
+    with pytest.raises(ColumnTypeCodeError):
+        ColumnTypeCode(DataType.TEXT, ColumnTypeCode(DataType.INTEGER))
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        999,
+        100,
+        [100, 999],
+        [4, 9],
+        [100],
+        [100, 9, 9],
+        [[100, 9], 4],
+        "4",
+        None,
+    ],
+    ids=[
+        "unknown-scalar",
+        "bare-array",
+        "unknown-element",
+        "non-array-pair",
+        "too-short",
+        "too-long",
+        "non-int-outer",
+        "not-a-value",
+        "none",
+    ],
+)
+def test_column_type_code_from_json_invalid(value):
+    """Verify malformed or unknown values raise ColumnTypeCodeError."""
+    with pytest.raises(ColumnTypeCodeError):
+        ColumnTypeCode.from_json(value)
 
 
 def test_float_vector_with_time_zone(mocked_connection):

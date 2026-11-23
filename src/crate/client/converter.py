@@ -209,3 +209,45 @@ class DefaultTypeConverter(Converter):
         if more_mappings:
             mappings.update(deepcopy(more_mappings))
         super().__init__(mappings=mappings, default=_to_default)
+
+
+class ColumnTypeCode:
+    def __init__(
+        self,
+        data_type: DataType,
+        subtype: Optional["ColumnTypeCode"] = None,
+    ) -> None:
+        if data_type is DataType.ARRAY and subtype is None:
+            raise ColumnTypeCodeError("Arrays must have a subtype")
+        if data_type is not DataType.ARRAY and subtype is not None:
+            raise ColumnTypeCodeError("Only arrays may have a subtype")
+        self.data_type = data_type
+        self.subtype = subtype
+
+    def __repr__(self) -> str:
+        if self.subtype is None:
+            return f"ColumnTypeCode({self.data_type})"
+        return f"ColumnTypeCode({self.data_type}, {self.subtype!r})"
+
+    @classmethod
+    def from_json(cls, value: Any) -> "ColumnTypeCode":
+        if isinstance(value, int):
+            try:
+                data_type = DataType(value)
+            except ValueError:
+                raise ColumnTypeCodeError(value) from None
+            return cls(data_type=data_type)
+
+        if (
+            isinstance(value, list)
+            and len(value) == 2
+            and value[0] == DataType.ARRAY.value
+        ):
+            subtype = cls.from_json(value[1])
+            return cls(data_type=DataType.ARRAY, subtype=subtype)
+
+        raise ColumnTypeCodeError(value)
+
+
+class ColumnTypeCodeError(Exception):
+    pass
